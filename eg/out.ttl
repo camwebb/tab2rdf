@@ -1,0 +1,60 @@
+@prefix : <http://foo.com/bar.rdf#> . @prefix dsw:  <http://purl.org/dsw/> . @prefix xmal: <http://xmalesia.info/sw/> . @prefix bot:  <http://xmalesia.info/onto/bot.rdf#> . @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> . @prefix dct:  <http://purl.org/dc/terms/> . @prefix dwc:  <http://rs.tdwg.org/dwc/terms/> . @prefix tc:   <http://rs.tdwg.org/ontology/voc/TaxonConcept#> . @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+
+:taxon120917Dillenia_sufructicosa a dsw:Taxon .
+:taxon120917Dillenia_sufructicosa dwc:specificEpithet "sufructicosa" .
+:taxon120917Dillenia_sufructicosa dwc:genus "Dillenia" .
+
+:taxon120917dillsufr a dsw:Taxon .
+:taxon120917dillsufr bot:morphotype "dillsufr" .
+
+:taxon120917rub1 a dsw:Taxon .
+:taxon120917rub1 bot:morphotype "rub1" .
+
+:taxon120917Rubiaceae a dsw:Taxon .
+:taxon120917Rubiaceae dwc:family "Rubiaceae" .
+
+<http://foo.com/img/123.jpg> a foaf:Image .
+<http://foo.com/img/123.jpg> foaf:depicts :indiv1209171 .
+
+<http://foo.com/img/124.jpg> a foaf:Image .
+<http://foo.com/img/124.jpg> foaf:depicts :indiv1209171 .
+
+<http://foo.com/img/202.jpg> a foaf:Image .
+<http://foo.com/img/202.jpg> foaf:depicts :indiv1209172 .
+
+<http://foo.com/img/205.jpg> a foaf:Image .
+<http://foo.com/img/205.jpg> foaf:depicts :indiv1209172 .
+
+:pers120917joe a foaf:Person .
+:pers120917joe foaf:email "joe.bloggs@gmail.com" .
+:pers120917joe foaf:name "Joe Bloggs" . 
+
+:syn1209171 a tc:Relationship .
+:syn1209171 tc:toTaxon :taxon120917Dillenia_sufructicosa .
+:syn1209171 tc:fromTaxon :taxon120917dillsufr . 
+:syn1209171 tc:relationshipCategory tc:IsSynonymFor .
+:syn1209171 bot:withConfidence "hi" .
+:syn1209171 bot:relationshipAccordingTo :pers120917joe .
+
+:syn1209172 a tc:Relationship .
+:syn1209172 tc:toTaxon :taxon120917Rubiaceae .
+:syn1209172 tc:fromTaxon :taxon120917rub1 . 
+:syn1209172 tc:relationshipCategory tc:IsChildTaxonOf .
+:syn1209172 bot:withConfidence "hi" .
+:syn1209172 bot:relationshipAccordingTo :pers120917joe .
+
+:indiv1209171 a dsw:IndividualOrganism .
+:indiv1209171 bot:diamBH "5.0"^^xsd:decimal .
+:indiv1209171 bot:hasTag "1"^^xsd:string .
+:ident120917joedillsufr dsw:idBy :pers120917joe .
+:indiv1209171 bot:inQuadrat :plot120917test . :plot120917test bot:quadratCode "test"^^xsd:string .
+:indiv1209171 dsw:hasID :ident120917joedillsufr . :ident120917joedillsufr dsw:toTaxon :taxon120917dillsufr .
+
+:indiv1209172 a dsw:IndividualOrganism .
+:indiv1209172 bot:diamBH "2.2"^^xsd:decimal .
+:indiv1209172 bot:hasTag "2"^^xsd:string .
+:indiv1209172 dct:description "leaning"^^xsd:string .
+:ident120917joerub1 dsw:idBy :pers120917joe .
+:indiv1209172 bot:inQuadrat :plot120917test . :plot120917test bot:quadratCode "test"^^xsd:string .
+:indiv1209172 dsw:hasID :ident120917joerub1 . :ident120917joerub1 dsw:toTaxon :taxon120917rub1 .
+
