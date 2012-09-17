@@ -1,0 +1,235 @@
+#!/usr/bin/gawk -f
+
+# tab2rdf : a simple template-based converter for data in relational tables
+# (c) 2012 Cam Webb <cwebb@oeb.harvard.edu>
+# Released under BSD 2-clause license
+
+BEGIN{
+
+# public variables tables[], DIR, d[], fieldnames[], namefields[]
+
+  testArgs() ;
+  readConfig() ;
+  testData() ;
+  print d["_general","_prefix"] "\n";
+  constructTurtle() ;
+  exit;
+}
+
+function constructTurtle(        dat, table, i, j, k, s)
+{
+  RS = "\n"; FS = "|";
+  for (table in tables)
+    {
+	  getline < ( DIR "/" table ".csv") ; 	  # skip header row
+	  while (( getline < ( DIR "/" table ".csv") ) > 0 )
+		{
+		  # only for non-blank pk rows
+		  if ($namefields[table, d[table,"_pk"]] != "")
+			{
+              for (i = 1; i <= NF; i++) 
+                {
+                  if ($i != "") 
+                    {
+                      dat[ fieldnames[table,i] ] = $i;
+                      # dat2 needed since gawk chokes on for (j in x) inside
+                      #      for (i in x). Not sure why
+                      dat2[ fieldnames[table,i] ] = $i;
+                    }
+                }
+            }
+          
+          # Make a subject
+          s = d[table, "_GUID"];
+          for (j in dat)
+            {
+              regex = "{" j "}" ; 
+              gsub(regex, dat[j], s);
+              gsub(/\{~\}/, d["_general","_unique"], s);
+            }
+          
+          # print class (optional)
+          print s " a " d[table,"_class"] " .";
+
+          # Make the other statements
+          for (j in dat) 
+            {
+              triple = d[table, j] ;
+              if (triple) 
+                { 
+                  gsub(/\{@\}/, s, triple);
+                  gsub(/\{~\}/, d["_general","_unique"], triple);
+                  for (k in dat2) 
+                    {
+                      regex = "{" k "}" ; 
+                      gsub(regex, dat2[k], triple);
+                    } 
+                  # fix quotes
+                  gsub(/\\x22/,"\"", triple);
+                  print triple;
+                  delete dat;
+                }
+            }
+          print "";
+        }
+      close(DIR "/" table ".csv");
+    }
+}
+ 
+function readConfig(    key, i, line, nlines ) 
+{
+  RS = "";
+  while ((getline < (DIR "/conf.ini")) > 0 )
+    {
+      # strip the backslashes that allow line overflow and compress spaces
+      gsub(/\ *\\\n\ */," ") ;
+      nlines = split($0,line,"\n");
+      
+      # Check for correct header
+      if (!match(line[1],/\[[A-Za-z0-9_]+\]/)) {
+        print "Error: incorrect section header format in conf.ini file" ; exit 
+      }
+      table = gensub(/\[([A-Za-z0-9_]+)\]/,"\\1","G", line[1]);
+      
+      # counter
+      if (table != "_general") tables[table] = 1;
+
+      # Read each line
+      for (i = 2; i <= nlines; i++)
+        {
+          # Check format
+          # move interior quotes to hex to allow regex matching
+          gsub(/\\"/,"\\x22",line[i]);
+          if (!match(line[i],/^[\t\ ]*[A-Za-z0-9_:]+\ *=\ *"[^"]+"[\t\ ]*$/)) {
+            print "Error: conf.ini file line has incorrect format : " \
+              line[i]; exit ;
+          } 
+          # could use patsplit(), but want to keep this gawk3 compat
+          key = gensub(/^[\t\ ]*([A-Za-z0-9_:]+)\ *=\ *"([^"]+)"[\t\ ]*$/, \
+                       "\\1","G",line[i]);
+          d[table,key] \
+            = gensub(/^[\t\ ]*([A-Za-z0-9_:]+)\ *=\ *"([^"]+)"[\t\ ]*$/, \
+                       "\\2","G",line[i]);
+        }
+    }
+
+  close(DIR "/conf.ini") ;
+}
+
+function testData(     t, i, j, z, k, l, pk, fk, fields )
+{
+  # preload all files to check for key dupes and failure of foreign keys
+  FS = "|";
+  RS = "\n";
+
+  # for each table
+  for (t in tables)
+	{
+	  # read the first line of the table
+	  getline < ( DIR "/" t ".csv") ;
+	  fields[t] = 0;
+	  for (i = 1; i <= NF; i++)
+		{
+		  # Discard blank columns
+		  if ($i != "")
+			{
+			  fieldnames[t,i] = $i;
+			  namefields[t,$i] = i;
+			  fields[t]++;
+              z[$i]++;
+			}
+          # test for duplicate column headers
+          for (j in z) { 
+            if (z[j] > 1) { 
+              print "Error: Duplicate column name '" j "' in table '" t \
+                "'" ; exit; 
+            } } 
+          delete z;
+		}
+
+	  # read the rest of the rows
+	  while (( getline < ( DIR "/" t ".csv") ) > 0 )
+		{
+		  # only for non-blank pk rows
+		  if ($namefields[t, d[t,"_pk"]] != "")
+			{
+			  for (i = 1; i <= fields[t]; i++)
+				{
+                  # primary keys
+                  if (i == namefields[t,d[t,"_pk"]]) pk[t,$i]++ ;
+                  # foreign keys
+				  if (d[t,("_fk:" fieldnames[t,i])] != "") fk[t,i,$i]++ ;
+				}
+			}
+		}
+	  close(DIR "/" t ".csv");
+	}
+  
+  # now run tests
+
+  # test for dupes in primary key
+  for (i in pk)
+    {
+      split(i,k,SUBSEP); # k[1] is the table, k[2] the value
+      if (pk[k[1],k[2]] > 1) { 
+        print "Error: duplicate primary key '" k[2] "' in table '" k[1] \
+          "'"; exit ;
+      }
+    }
+
+  #test for foreign key lookups
+  for (i in fk)
+    {
+      split(i,l,SUBSEP); 
+      # l[1] is the table; l[2] is the field number, l[3] the value
+      ftab = d[l[1], ("_fk:" fieldnames[l[1],l[2]])];
+      if (!pk[ftab, l[3]])
+        {
+          print "Error: foreign key '" l[3] "' from table '" l[1] \
+            "' field '" fieldnames[l[1],l[2]] "'";
+          print "  is not in the primary key for table '" ftab "'";
+          exit;
+        }
+    }
+}
+
+function testArgs()
+{
+  # test args
+  if (ARGC != 2) 
+    { print "Usage: tab2rdf directory_of_csv_files" ; exit }
+  # test for directory
+  if (system("test -d " ARGV[1]) == 1) 
+	{ print "Error: " ARGV[1] " not a directory. Exiting."; exit; }
+  else  DIR = ARGV[1] ;
+}
+
+function urlencode(instr,         i, hextab, ord, encoded)
+{
+  # Author :  Heiner Steven (heiner.steven@odn.de)
+  split ("1 2 3 4 5 6 7 8 9 A B C D E F", hextab, " ") ;
+  hextab [0] = 0 ;
+  for ( i=1; i<=255; ++i ) ord [ sprintf ("%c", i) "" ] = i + 0 ;
+  
+  encoded = "" ;
+  for ( i=1; i<=length (instr); ++i ) 
+    {
+      c = substr (instr, i, 1)
+      if ( c ~ /[a-zA-Z0-9.-]/ ) 
+        {
+          encoded = encoded c             # safe character
+        } 
+      else if ( c == " " ) 
+        {
+          encoded = encoded "+"   # special handling
+        } 
+      else 
+        {
+          # unsafe character, encode it as a two-digit hex-number
+          lo = ord [c] % 16
+          hi = int (ord [c] / 16);
+          encoded = encoded "%" hextab [hi] hextab [lo]
+        }
+    }
+  return encoded;
+}
