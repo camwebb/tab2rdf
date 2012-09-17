@@ -57,15 +57,27 @@ function constructTurtle(        dat, table, i, j, k, s)
               triple = d[table, j] ;
               if (triple) 
                 { 
-                  gsub(/\{@\}/, s, triple);
-                  gsub(/\{~\}/, d["_general","_unique"], triple);
                   for (k in dat2) 
                     {
                       regex = "{" k "}" ; 
                       gsub(regex, dat2[k], triple);
                     } 
+
+                  # URI substitutions
+                  subs = d["_general", \
+                          ("_sub:" d[table,("_fk:" j)] ":" dat2[j])];
+                  if (subs)
+                    {
+                      split(subs, ss, "|");
+                      gsub(ss[1] , ss[2], triple);
+                    }
+
+                  gsub(/\{@\}/, s, triple);
+                  gsub(/\{~\}/, d["_general","_unique"], triple);
                   # fix quotes
                   gsub(/\\x22/,"\"", triple);
+
+                  
                   print triple;
                   delete dat;
                 }
@@ -183,7 +195,8 @@ function testData(     t, i, j, z, k, l, pk, fk, fields )
       split(i,l,SUBSEP); 
       # l[1] is the table; l[2] is the field number, l[3] the value
       ftab = d[l[1], ("_fk:" fieldnames[l[1],l[2]])];
-      if (!pk[ftab, l[3]])
+      if ((!pk[ftab, l[3]]) &&                  \
+          (!d["_general", ("_sub:" ftab ":" l[3])])) 
         {
           print "Error: foreign key '" l[3] "' from table '" l[1] \
             "' field '" fieldnames[l[1],l[2]] "'";
