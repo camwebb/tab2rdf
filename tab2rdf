@@ -40,7 +40,7 @@ function constructTurtle(        dat, table, i, j, k, s)
             }
           
           # Make a local subject, if not a URI
-          if (substr(dat[d[table, "_pk"]],1,4) != "http")
+          if (substr(dat[d[table, "_pk"]],1,7) != "http://")
             {
               s = d[table, "_GUID"];
               regex = "{" d[table, "_pk"] "}" ; 
@@ -60,7 +60,7 @@ function constructTurtle(        dat, table, i, j, k, s)
                 { 
                   # check if the _fk is a URI
                   if ((d[table, ("_fk:" j)]) && \
-                      (substr(dat2[j],1,4) == "http"))
+                      (substr(dat2[j],1,7) == "http://"))
                     {
                       # need to find the triple parts that refer to 
                       # this _fk. These will be where {_fk} occurs alone
@@ -221,7 +221,7 @@ function testData(     t, i, j, z, k, l, pk, fk, fields )
     {
       split(i,k,SUBSEP); # k[1] is the table, k[2] the value
       if ((k[2] != gensub(/[^A-Za-z0-9_\-]/,"","G", k[2])) \
-          && (substr(k[2],1,4) != "http")) {
+          && (substr(k[2],1,7) != "http://")) {
         print "Error: dissallowed characters in primary key '" k[2] \
           "' in table '" k[1] "'"; exit ;
       }

@@ -44,7 +44,8 @@ Each data table should:
 
  * be delimited with `|` (pipe) characters
  * have a single header line
- * have a primary key column with unique values that are _URL safe_
+ * have a primary key column that is _either_ a URI (beginning with
+   http://), _or_ a string with unique values that are _URL safe_
    (i.e., regex = `[A-Za-z0-9_-]+`); the primary key field does not
    need to be the first
  * have all values of any foreign key fields be present in the primary
