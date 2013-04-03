@@ -1,7 +1,8 @@
 @prefix : <http://foo.com/bar.rdf#> . @prefix dsw:  <http://purl.org/dsw/> . @prefix xmal: <http://xmalesia.info/sw/> . @prefix bot:  <http://xmalesia.info/onto/bot.rdf#> . @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> . @prefix dct:  <http://purl.org/dc/terms/> . @prefix dwc:  <http://rs.tdwg.org/dwc/terms/> . @prefix tc:   <http://rs.tdwg.org/ontology/voc/TaxonConcept#> . @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 
 :taxon120917Dillenia_sufructicosa a dsw:Taxon .
-:taxon120917Dillenia_sufructicosa dwc:specificEpithet "sufructicosa" .
+:taxon120917Dillenia_sufructicosa dwc:specificEpithet "suffructicosa" .
+:taxon120917Dillenia_sufructicosa tc:hasName <http://www.ubio.org/authority/metadata.php?lsid=urn:lsid:ubio.org:namebank:2676269> .
 :taxon120917Dillenia_sufructicosa dwc:genus "Dillenia" .
 
 :taxon120917dillsufr a dsw:Taxon .
@@ -29,6 +30,10 @@
 :pers120917joe foaf:email "joe.bloggs@gmail.com" .
 :pers120917joe foaf:name "Joe Bloggs" . 
 
+<http://camwebb.info/sw/cw> a foaf:Person .
+<http://camwebb.info/sw/cw> foaf:email "cam_webb@yahoo.com" .
+<http://camwebb.info/sw/cw> foaf:name "Cam Webb" . 
+
 :syn1209171 a tc:Relationship .
 :syn1209171 tc:toTaxon :taxon120917Dillenia_sufructicosa .
 :syn1209171 tc:fromTaxon :taxon120917dillsufr . 
@@ -54,7 +59,14 @@
 :indiv1209172 bot:diamBH "2.2"^^xsd:decimal .
 :indiv1209172 bot:hasTag "2"^^xsd:string .
 :indiv1209172 dct:description "leaning"^^xsd:string .
-:ident120917joerub1 dsw:idBy :pers120917joe .
+:ident120917johnrub1 dsw:idBy <http://foobar.com/john> .
 :indiv1209172 bot:inQuadrat :plot120917test . :plot120917test bot:quadratCode "test"^^xsd:string .
-:indiv1209172 dsw:hasID :ident120917joerub1 . :ident120917joerub1 dsw:toTaxon :taxon120917rub1 .
+:indiv1209172 dsw:hasID :ident120917johnrub1 . :ident120917johnrub1 dsw:toTaxon :taxon120917rub1 .
+
+:indiv1209173 a dsw:IndividualOrganism .
+:indiv1209173 bot:diamBH "1.2"^^xsd:decimal .
+:indiv1209173 bot:hasTag "3"^^xsd:string .
+:ident120917httpcamwebbinfoswcwrub1 dsw:idBy <http://camwebb.info/sw/cw> .
+:indiv1209173 bot:inQuadrat :plot120917test . :plot120917test bot:quadratCode "test"^^xsd:string .
+:indiv1209173 dsw:hasID :ident120917httpcamwebbinfoswcwrub1 . :ident120917httpcamwebbinfoswcwrub1 dsw:toTaxon :taxon120917rub1 .
 
