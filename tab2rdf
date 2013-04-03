@@ -39,15 +39,16 @@ function constructTurtle(        dat, table, i, j, k, s)
                 }
             }
           
-          # Make a subject
-          s = d[table, "_GUID"];
-          for (j in dat)
+          # Make a local subject, if not a URI
+          if (substr(dat[d[table, "_pk"]],1,4) != "http")
             {
-              regex = "{" j "}" ; 
-              gsub(regex, dat[j], s);
+              s = d[table, "_GUID"];
+              regex = "{" d[table, "_pk"] "}" ; 
+              gsub(regex, dat[d[table, "_pk"]], s);
               gsub(/\{~\}/, d["_general","_unique"], s);
             }
-          
+          else s = "<" dat[d[table, "_pk"]] ">" ;
+
           # print class (optional)
           print s " a " d[table,"_class"] " .";
 
@@ -57,10 +58,41 @@ function constructTurtle(        dat, table, i, j, k, s)
               triple = d[table, j] ;
               if (triple) 
                 { 
+                  # check if the _fk is a URI
+                  if ((d[table, ("_fk:" j)]) && \
+                      (substr(dat2[j],1,4) == "http"))
+                    {
+                      # need to find the triple parts that refer to 
+                      # this _fk. These will be where {_fk} occurs alone
+                      # without another {xxx}
+                      newtriple = "";
+                      natom = split(triple,atoms,/\ \ */);
+                      for (natomi = 1; natomi <= natom; natomi++) {
+                        # copy the element
+                        oriatom = atoms[natomi];
+                        # remove the unique code and primary key
+                        gsub(/\{[@~]\}/, "" , atoms[natomi]);
+                        # remove all chars other than `{`
+                        gsub(/[^{]/,"",atoms[natomi]);
+                        if (length(atoms[natomi]) == 1) {
+                          # make the plain substitution
+                          newtriple = newtriple "<" dat2[j] ">";
+                        } 
+                        else newtriple = newtriple oriatom;
+                        if (natomi < natom) newtriple = newtriple " " ;
+                      }
+                      triple = newtriple;
+                    }
+
+                  # substitute the rest
                   for (k in dat2) 
                     {
                       regex = "{" k "}" ; 
-                      gsub(regex, dat2[k], triple);
+                      # clean possible URL parts if _fk
+                      if (d[table, ("_fk:" k)]) {
+                        gsub(regex, gensub(/[^A-Za-z0-9_\-]/,"","G",dat2[k]), \
+                             triple);
+                      } else gsub(regex, dat2[k], triple);
                     } 
 
                   # URI substitutions
@@ -168,9 +200,14 @@ function testData(     t, i, j, z, k, l, pk, fk, fields )
 			  for (i = 1; i <= fields[t]; i++)
 				{
                   # primary keys
-                  if (i == namefields[t,d[t,"_pk"]]) pk[t,$i]++ ;
+                  if (i == namefields[t,d[t,"_pk"]]) {
+                    pk[t,$i]++;
+                    pk2[t,gensub(/[^A-Za-z0-9_\-]/,"","G",$i)]++ ;
+                  }
                   # foreign keys
-				  if (d[t,("_fk:" fieldnames[t,i])] != "") fk[t,i,$i]++ ;
+				  if (d[t,("_fk:" fieldnames[t,i])] != "") {
+                    fk[t,i,$i]++ ;
+                  }
 				}
 			}
 		}
@@ -179,11 +216,22 @@ function testData(     t, i, j, z, k, l, pk, fk, fields )
   
   # now run tests
 
-  # test for dupes in primary key
+  # test for disallowed chars in pk, unless URI
   for (i in pk)
     {
       split(i,k,SUBSEP); # k[1] is the table, k[2] the value
-      if (pk[k[1],k[2]] > 1) { 
+      if ((k[2] != gensub(/[^A-Za-z0-9_\-]/,"","G", k[2])) \
+          && (substr(k[2],1,4) != "http")) {
+        print "Error: dissallowed characters in primary key '" k[2] \
+          "' in table '" k[1] "'"; exit ;
+      }
+    }
+
+  # test for dupes in primary key, use 'slimmed' pk
+  for (i in pk2)
+    {
+      split(i,k,SUBSEP); # k[1] is the table, k[2] the value
+      if (pk2[k[1],k[2]] > 1) { 
         print "Error: duplicate primary key '" k[2] "' in table '" k[1] \
           "'"; exit ;
       }
